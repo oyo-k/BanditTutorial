@@ -34,19 +34,19 @@ function main(args)
     # 引数が足りない場合は使い方を表示して終了
     if length(args) < 7
         println(stderr, """
-引数が設定されていません。
+            引数が設定されていません。
 
-使い方: julia scripts/run.jl SEED N_TRIALS N_REPS ALPHA BETA P1 P2 [P3 ...]
+            使い方: julia scripts/run.jl SEED N_TRIALS N_REPS ALPHA BETA P1 P2 [P3 ...]
 
-  SEED       乱数シード
-  N_TRIALS   試行数
-  N_REPS     繰り返し回数（平均化用）
-  ALPHA      学習率（0〜1）
-  BETA       softmax 逆温度
-  P1 P2 ...  各腕の報酬確率（2 本以上）
+            SEED       乱数シード
+            N_TRIALS   試行数
+            N_REPS     繰り返し回数（平均化用）
+            ALPHA      学習率（0〜1）
+            BETA       softmax 逆温度
+            P1 P2 ...  各腕の報酬確率（2 本以上）
 
-例: julia scripts/run.jl 42 100 200 0.3 5.0 0.2 0.8
-""")
+            例: julia scripts/run.jl 42 100 200 0.3 5.0 0.2 0.8
+            """)
         exit(1)
     end
 
