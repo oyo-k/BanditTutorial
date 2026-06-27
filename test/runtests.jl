@@ -32,11 +32,14 @@ ti = time()
 
     @testset "run_bandit" begin
         Random.seed!(42)
-        acc = run_bandit(100, [0.2, 0.8], 0.3, 5.0)
-        @test length(acc) == 100
-        @test all(x -> x in (0.0, 1.0), acc)
+        result = run_bandit(100, [0.2, 0.8], 0.3, 5.0)
+        @test length(result.accuracy) == 100
+        @test all(x -> x in (0.0, 1.0), result.accuracy)
         # 学習が進めば後半は最適腕を高い割合で選ぶ
-        @test mean(acc[end-19:end]) > 0.8
+        @test mean(result.accuracy[end-19:end]) > 0.8
+        # regret は非負・長さ一致
+        @test length(result.regret) == 100
+        @test all(x -> x >= 0.0, result.regret)
     end
 end
 

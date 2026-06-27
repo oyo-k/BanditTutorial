@@ -55,10 +55,10 @@ end
 
 
 """
-    run_bandit(n_trials, reward_probs, alpha, beta) -> Vector{Float64}
+    run_bandit(n_trials, reward_probs, alpha, beta) -> NamedTuple
 
 多腕バンディット上で Q 学習を `n_trials` 試行ぶん実行する。
-各試行で最適腕を選べたかどうか（1.0 / 0.0）の系列を返す。
+`(accuracy=..., regret=...)` の NamedTuple を返す。
 
 - `reward_probs` : 各腕の報酬確率
 - `alpha`        : 学習率（0〜1。大きいほど直近の結果を重視）
@@ -68,7 +68,23 @@ function run_bandit(n_trials, reward_probs, alpha, beta)
     n_arms   = length(reward_probs)  # 腕の本数（例：2）
     q        = fill(0.0, n_arms)     # Q 値の初期化（全腕を 0.0 に設定）
     accuracy = zeros(n_trials)       # 各試行で最適腕を選んだか（1/0）を記録
+    regret   = zeros(n_trials)       # 各試行の後悔（regret）を記録
     best_arm = argmax(reward_probs)  # 正解の腕（報酬確率が最大の腕）
+    p_best   = reward_probs[best_arm]  # 最適腕の報酬確率
+
+    # ============================================================
+    # regret（後悔）とは？
+    # ============================================================
+    # 毎試行、「もし最初から最良腕を引き続けていたら」との差を表す。
+    #
+    #   regret_t = p_best - p_choice
+    #
+    # 例: p_best=0.8, p_choice=0.2 → regret = 0.6
+    #     最良腕を選んだとき              → regret = 0.0
+    #
+    # 累積 regret = Σ regret_t（右上がりのカーブで増えていく）
+    # 学習が早いほどカーブが緩やかになり、「少ない損失で済んだ」ことを示す。
+    # ============================================================
 
     for t in 1:n_trials
         # --- 行動選択 ---
@@ -91,13 +107,12 @@ function run_bandit(n_trials, reward_probs, alpha, beta)
         # 良い結果が出た腕の Q 値は上がり、次に選ばれやすくなる。
         q[choice] += alpha * (reward - q[choice])
 
-        # --- 正解判定 ---
-        # 選んだ腕が最適腕なら 1.0、そうでなければ 0.0 を記録
+        # --- 正解判定と後悔の記録 ---
         accuracy[t] = choice == best_arm ? 1.0 : 0.0
+        regret[t]   = p_best - reward_probs[choice]
     end
 
-    # 各試行の正解率系列を返す（後でグラフを描くのに使う）
-    return accuracy
+    return (accuracy=accuracy, regret=regret)
 end
 
 

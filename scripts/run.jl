@@ -1,41 +1,82 @@
-import Pkg
-Pkg.activate(joinpath(@__DIR__, ".."); io=devnull)
-Pkg.instantiate(; io=devnull)
+# ============================================================
+# scripts/run.jl — 1 パラメータ条件のシミュレーション実行スクリプト
+# ============================================================
+#
+# 使い方:
+#   julia scripts/run.jl SEED N_TRIALS N_REPS ALPHA BETA
+#
+# 引数:
+#   SEED      乱数シード（再現性のために固定する整数）
+#   N_TRIALS  1 回のシミュレーションで行う試行数
+#   N_REPS    シミュレーションを繰り返す回数（平均化用）
+#   ALPHA     Q 学習の学習率（0〜1）
+#   BETA      softmax の逆温度（大きいほど貪欲）
+#
+# 出力:
+#   data/sims/bandit_alpha=…_beta=…_….csv
+#
+# 役割:
+#   このスクリプトは「1 つのパラメータ条件」だけを担当する。
+#   複数条件の sweep やグラフ描画は notebooks/bandit_qlearning.ipynb が行う。
+#   ノートブックがこのスクリプトをサブプロセスとして条件ごとに呼び出す設計。
+# ============================================================
 
-using DrWatson
+import Pkg
+Pkg.activate(joinpath(@__DIR__, ".."); io=devnull)  # プロジェクト環境を有効化
+Pkg.instantiate(; io=devnull)                        # 未インストールのパッケージを補完
+
+using DrWatson       # projectdir / datadir / savename などのパス管理
 using CSV, DataFrames
 using Random, Statistics
 
-# シミュレーション関数本体は src/bandit.jl
+# シミュレーション本体（softmax_choice / run_bandit / moving_average）を読み込む
 include(srcdir("bandit.jl"))
 
-# 使い方:  julia scripts/run.jl SEED N_TRIALS N_REPS ALPHA BETA
-#
-# 解析の主体は notebooks/bandit_qlearning.ipynb。
-# このスクリプトは 1 つのパラメータ条件についてシミュレーションを実行し、
-# 各試行で最適腕を選んだ割合（N_REPS 回平均）を datadir("sims") へ CSV 保存する。
+# 2 本腕の報酬確率（腕 1 = 0.2、腕 2 = 0.8）
+# この値はスクリプト全体で固定。変えたい場合はここを編集する。
+const REWARD_PROBS = [0.2, 0.8]
 
-const REWARD_PROBS = [0.2, 0.8]   # 2 本腕の報酬確率（固定）
-const DEFAULTS     = ["42", "100", "200", "0.3", "5.0"]
+# 引数なしで実行したときに使うデフォルト値
+# （ノートブックから呼ぶときは引数を渡すので通常は使われない）
+const DEFAULTS = ["42", "100", "200", "0.3", "5.0"]
 
 function main(args)
+    # コマンドライン引数を適切な型に変換する
     seed     = parse(Int,     args[1])
     n_trials = parse(Int,     args[2])
     n_reps   = parse(Int,     args[3])
     alpha    = parse(Float64, args[4])
     beta     = parse(Float64, args[5])
 
-    # n_reps 回の独立シミュレーションを平均して学習曲線を滑らかにする
-    acc = zeros(n_trials)
+    # --------------------------------------------------------
+    # N_REPS 回のシミュレーションを実行して平均を取る
+    # --------------------------------------------------------
+    # 1 回のシミュレーションだけでは乱数の偶然に左右されて
+    # 結果がぶれてしまう。N_REPS 回繰り返して平均することで
+    # 「このパラメータ条件の典型的な学習曲線」が得られる。
+    #
+    # seed を毎回 seed+r にずらすことで、各繰り返しが
+    # 独立した乱数列を使うようにしている。
+    acc = zeros(n_trials)  # accuracy（最適腕選択率）の累積
+    reg = zeros(n_trials)  # regret（後悔）の累積
     for r in 1:n_reps
         Random.seed!(seed + r)
-        acc .+= run_bandit(n_trials, REWARD_PROBS, alpha, beta)
+        result = run_bandit(n_trials, REWARD_PROBS, alpha, beta)
+        acc .+= result.accuracy  # 試行ごとに加算（後で平均する）
+        reg .+= result.regret
     end
-    p_optimal = acc ./ n_reps
+    p_optimal   = acc ./ n_reps   # 各試行の最適腕選択率（0〜1）
+    mean_regret = reg ./ n_reps   # 各試行の平均後悔（累積は notebook 側で cumsum）
 
+    # --------------------------------------------------------
+    # 結果を DataFrame にまとめて CSV 保存
+    # --------------------------------------------------------
+    # パラメータ列（alpha, beta, seed, …）も一緒に保存しておくと、
+    # 後で複数の CSV を結合したときにどの条件かを識別できる。
     df = DataFrame(
         trial     = 1:n_trials,
         p_optimal = p_optimal,
+        regret    = mean_regret,
         alpha     = alpha,
         beta      = beta,
         seed      = seed,
@@ -43,12 +84,15 @@ function main(args)
         n_reps    = n_reps,
     )
 
+    # savename は DrWatson の関数。パラメータをファイル名に埋め込んでくれる。
+    # 例: bandit_alpha=0.3_beta=5.0_n_reps=200_n_trials=100_seed=42.csv
     params = @strdict alpha beta seed n_trials n_reps
     outdir = datadir("sims")
-    mkpath(outdir)
+    mkpath(outdir)   # data/sims/ がなければ作成
     fpath  = joinpath(outdir, savename("bandit", params, "csv"))
     CSV.write(fpath, df)
     println("Saved: ", fpath)
 end
 
+# ARGS（コマンドライン引数）が空ならデフォルト値で実行
 main(isempty(ARGS) ? DEFAULTS : ARGS)
