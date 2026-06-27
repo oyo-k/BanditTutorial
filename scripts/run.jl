@@ -3,15 +3,15 @@
 # ============================================================
 #
 # 使い方:
-#   julia scripts/run.jl SEED N_TRIALS N_REPS ALPHA BETA P1 P2 [P3 ...]
+#   julia scripts/run.jl seed n_trials n_reps alpha beta reward_probs...
 #
 # 引数:
-#   SEED       乱数シード（再現性のために固定する整数）
-#   N_TRIALS   1 回のシミュレーションで行う試行数
-#   N_REPS     シミュレーションを繰り返す回数（平均化用）
-#   ALPHA      Q 学習の学習率（0〜1）
-#   BETA       softmax の逆温度（大きいほど貪欲）
-#   P1 P2 ...  各腕の報酬確率（2 本以上、スペース区切り）
+#   seed          乱数シード（再現性のために固定する整数）
+#   n_trials      1 回のシミュレーションで行う試行数
+#   n_reps        シミュレーションを繰り返す回数（平均化用）
+#   alpha         Q 学習の学習率（0〜1）
+#   beta          softmax の逆温度（大きいほど貪欲）
+#   reward_probs  各腕の報酬確率（2 本以上、スペース区切り）
 #
 # 例:
 #   julia scripts/run.jl 42 100 200 0.3 5.0 0.2 0.8
@@ -36,14 +36,14 @@ function main(args)
         println(stderr, """
             引数が設定されていません。
 
-            使い方: julia scripts/run.jl SEED N_TRIALS N_REPS ALPHA BETA P1 P2 [P3 ...]
+            使い方: julia scripts/run.jl seed n_trials n_reps alpha beta reward_probs...
 
-            SEED       乱数シード
-            N_TRIALS   試行数
-            N_REPS     繰り返し回数（平均化用）
-            ALPHA      学習率（0〜1）
-            BETA       softmax 逆温度
-            P1 P2 ...  各腕の報酬確率（2 本以上）
+            seed          乱数シード
+            n_trials      試行数
+            n_reps        繰り返し回数（平均化用）
+            alpha         学習率（0〜1）
+            beta          softmax 逆温度
+            reward_probs  各腕の報酬確率（2 本以上、スペース区切り）
 
             例: julia scripts/run.jl 42 100 200 0.3 5.0 0.2 0.8
             """)
@@ -58,12 +58,12 @@ function main(args)
     reward_probs = parse.(Float64, args[6:end])  # 残りすべてが報酬確率
 
     # --------------------------------------------------------
-    # N_REPS 回のシミュレーションを実行して平均を取る
+    # n_reps 回のシミュレーションを実行して平均を取る
     # --------------------------------------------------------
     # seed を毎回 seed+r にずらすことで、各繰り返しが
     # 独立した乱数列を使うようにしている。
-    acc = zeros(n_trials)
-    reg = zeros(n_trials)
+    acc = zeros(n_trials) # 各試行の最適腕選択率（0〜1）を累積する配列
+    reg = zeros(n_trials) # 各試行の平均後悔（累積は notebook 側で cumsum）を累積する配列
     for r in 1:n_reps
         Random.seed!(seed + r)
         result = run_bandit(n_trials, reward_probs, alpha, beta)

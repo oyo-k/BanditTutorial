@@ -23,8 +23,8 @@
 flowchart TD
     A([START]) --> B[notebooks/bandit_qlearning.ipynb を開く]
     B --> C{パラメータ sweep<br/>α × β の全組み合わせ}
-    C --> D["scripts/run.jl をサブプロセス実行<br/>(SEED, N_TRIALS, N_REPS, α, β)"]
-    D --> E[src/bandit.jl で N_REPS 回シミュレーション]
+    C --> D["scripts/run.jl をサブプロセス実行<br/>(seed, n_trials, n_reps, alpha, beta)"]
+    D --> E[src/bandit.jl で n_reps 回シミュレーション]
     E --> F[p_optimal を CSV として data/sims/ へ保存]
     F --> C
     C --> G[全 CSV を DataFrame に集計]
@@ -49,10 +49,10 @@ flowchart LR
     subgraph Params["パラメータ入力"]
         P1[α 学習率]
         P2[β 逆温度]
-        P3[seed / N_TRIALS / N_REPS]
+        P3[seed / n_trials / n_reps]
     end
 
-    subgraph Sim["シミュレーション ×N_REPS (src/bandit.jl)"]
+    subgraph Sim["シミュレーション ×n_reps (src/bandit.jl)"]
         direction TB
         S1["Q 値初期化<br/>Q = [0, 0]"]
         S2["softmax_choice(Q, β)<br/>→ choice"]
@@ -60,12 +60,12 @@ flowchart LR
         S4["Q 値更新<br/>Q[choice] += α(r − Q[choice])"]
         S5{次の試行へ}
         S1 --> S2 --> S3 --> S4 --> S5
-        S5 -->|t ≤ N_TRIALS| S2
-        S5 -->|t > N_TRIALS| S6[accuracy ベクトル]
+        S5 -->|t ≤ n_trials| S2
+        S5 -->|t > n_trials| S6[accuracy ベクトル]
     end
 
     subgraph Agg["集計 (scripts/run.jl)"]
-        A1["N_REPS 回の accuracy を平均<br/>→ p_optimal[t]"]
+        A1["n_reps 回の accuracy を平均<br/>→ p_optimal[t]"]
         A2["DataFrame 化<br/>(trial, p_optimal, α, β, ...)"]
         A3["CSV 保存<br/>data/sims/bandit_....csv"]
         A1 --> A2 --> A3
@@ -74,7 +74,7 @@ flowchart LR
     subgraph Viz["可視化 (notebook)"]
         V1["CSV 読み込み・結合"]
         V2["α × β ごとに学習曲線を描画"]
-        V4["plots/ へ PNG 保存"]
+        V3["plots/ へ PNG 保存"]
         V1 --> V2 --> V3
     end
 
@@ -138,7 +138,7 @@ Juliaカーネルは **`julia-1.11`** を選択する。
 ### スクリプト単体実行
 
 ```bash
-julia scripts/run.jl SEED N_TRIALS N_REPS ALPHA BETA P1 P2 [P3 ...]
+julia scripts/run.jl seed n_trials n_reps alpha beta reward_probs...
 # 例: julia scripts/run.jl 42 100 200 0.3 5.0 0.2 0.8
 ```
 
@@ -156,12 +156,12 @@ julia --project=. test/runtests.jl
 
 | 引数 | 型 | 説明 |
 |---|---|---|
-| `SEED` | Int | 乱数シード |
-| `N_TRIALS` | Int | 1 回のシミュレーションの試行数 |
-| `N_REPS` | Int | 反復回数（平均化用） |
-| `ALPHA` (α) | Float64 | Q 学習の学習率（0〜1） |
-| `BETA` (β) | Float64 | softmax の逆温度 |
-| `P1 P2 ...` | Float64... | 各腕の報酬確率（2 本以上、スペース区切り） |
+| `seed` | Int | 乱数シード |
+| `n_trials` | Int | 1 回のシミュレーションの試行数 |
+| `n_reps` | Int | 反復回数（平均化用） |
+| `alpha` (α) | Float64 | Q 学習の学習率（0〜1） |
+| `beta` (β) | Float64 | softmax の逆温度 |
+| `reward_probs` | Float64... | 各腕の報酬確率（2 本以上、スペース区切り） |
 
 ---
 
