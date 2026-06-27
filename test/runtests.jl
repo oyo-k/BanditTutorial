@@ -23,13 +23,6 @@ ti = time()
         @test mean(choices .== 2) > 0.9
     end
 
-    @testset "moving_average" begin
-        @test moving_average([1.0, 1.0, 1.0], 2) == [1.0, 1.0, 1.0]
-        ma = moving_average([0.0, 1.0], 2)
-        @test ma[1] == 0.0
-        @test ma[2] == 0.5
-    end
-
     @testset "run_bandit" begin
         Random.seed!(42)
         result = run_bandit(100, [0.2, 0.8], 0.3, 5.0)

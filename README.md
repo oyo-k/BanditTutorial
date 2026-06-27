@@ -8,11 +8,12 @@
 
 ## 概要
 
-2本腕バンディット課題上でQ学習エージェントを動かし、学習率α・逆温度βのパラメーターsweepによる学習曲線の変化を可視化する。
+2本腕バンディット課題上でQ学習エージェントを動かし、学習率α・逆温度βのパラメーターsweepによる学習曲線と累積regretの変化を可視化する。
 
 - 報酬確率: アーム1 = 0.2、アーム2 = **0.8**（固定）
 - 行動選択: softmax（逆温度 β）
 - Q値更新: δ則（`Q ← Q + α(r − Q)`）
+- 評価指標: 最適腕選択率 `p_optimal` と累積後悔 `cumulative regret`
 
 ---
 
@@ -94,7 +95,8 @@ BanditTutorial/
 ├── scripts/
 │   └── run.jl                   # 1 条件をシミュレーションして CSV 保存
 ├── src/
-│   └── bandit.jl                # シミュレーション関数（共有ライブラリ）
+│   ├── bandit.jl                # モデル: softmax_choice / run_bandit / moving_average
+│   └── io.jl                    # 保存: save_sim（CSV 書き出し）
 ├── test/
 │   └── runtests.jl              # ユニットテスト
 ├── data/
@@ -107,8 +109,9 @@ BanditTutorial/
 | ファイル | 役割 |
 |---|---|
 | [`notebooks/bandit_qlearning.ipynb`](notebooks/bandit_qlearning.ipynb) | sweep 定義・集計・作図のメイン |
-| [`scripts/run.jl`](scripts/run.jl) | 1パラメーター条件のシミュレーション実行・CSV保存 |
-| [`src/bandit.jl`](src/bandit.jl) | `softmax_choice` / `run_bandit` / `moving_average` の定義 |
+| [`scripts/run.jl`](scripts/run.jl) | 1パラメーター条件のシミュレーション実行（`bandit.jl` + `io.jl` を呼ぶ） |
+| [`src/bandit.jl`](src/bandit.jl) | モデル: `softmax_choice` / `run_bandit` |
+| [`src/io.jl`](src/io.jl) | 保存: `save_sim`（DataFrame 構築〜CSV 書き出し） |
 | [`test/runtests.jl`](test/runtests.jl) | 各関数のユニットテスト |
 
 ---

@@ -11,8 +11,7 @@ using Statistics
 # このファイルでは
 #   1. softmax_choice  : 学習した価値をもとに腕を選ぶ関数
 #   2. run_bandit      : Q 学習で腕を学習するシミュレーション本体
-#   3. moving_average  : 結果を見やすく平滑化するユーティリティ
-# の 3 つを定義する。
+# の 2 つを定義する。
 # ============================================================
 
 
@@ -113,22 +112,4 @@ function run_bandit(n_trials, reward_probs, alpha, beta)
     end
 
     return (accuracy=accuracy, regret=regret)
-end
-
-
-"""
-    moving_average(x, window) -> Vector{Float64}
-
-`x` を窓幅 `window` の移動平均で平滑化する（学習曲線の可視化用）。
-"""
-function moving_average(x, window)
-    # 試行ごとに「直近 window 試行の平均」を計算する。
-    # 例: x = [1,0,1,1,0], window = 3 のとき
-    #   t=1 → mean([1])      = 1.0
-    #   t=2 → mean([1,0])    = 0.5
-    #   t=3 → mean([1,0,1])  = 0.67
-    #   t=4 → mean([0,1,1])  = 0.67
-    #   t=5 → mean([1,1,0])  = 0.67
-    # 試行ごとの 0/1 の乱れを滑らかにして傾向を見やすくする。
-    return [mean(x[max(1, t - window + 1):t]) for t in eachindex(x)]
 end
