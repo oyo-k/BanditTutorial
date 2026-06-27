@@ -139,9 +139,11 @@ Juliaカーネルは **`julia-1.11`** を選択する。
 ### スクリプト単体実行
 
 ```bash
-julia scripts/run.jl SEED N_TRIALS N_REPS ALPHA BETA
-# 例: julia scripts/run.jl 42 100 200 0.3 5.0
+julia scripts/run.jl SEED N_TRIALS N_REPS ALPHA BETA P1 P2 [P3 ...]
+# 例: julia scripts/run.jl 42 100 200 0.3 5.0 0.2 0.8
 ```
+
+引数を省略した場合は使い方のメッセージが表示される。
 
 ### テスト実行
 
@@ -153,13 +155,14 @@ julia --project=. test/runtests.jl
 
 ## パラメーター
 
-| 引数 | 型 | 説明 | デフォルト |
-|---|---|---|---|
-| `SEED` | Int | 乱数シード | 42 |
-| `N_TRIALS` | Int | 1 試行あたりの試行数 | 100 |
-| `N_REPS` | Int | 反復回数（平均化用） | 200 |
-| `ALPHA` (α) | Float64 | Q 学習の学習率 | 0.3 |
-| `BETA` (β) | Float64 | softmax の逆温度 | 5.0 |
+| 引数 | 型 | 説明 |
+|---|---|---|
+| `SEED` | Int | 乱数シード |
+| `N_TRIALS` | Int | 1 回のシミュレーションの試行数 |
+| `N_REPS` | Int | 反復回数（平均化用） |
+| `ALPHA` (α) | Float64 | Q 学習の学習率（0〜1） |
+| `BETA` (β) | Float64 | softmax の逆温度 |
+| `P1 P2 ...` | Float64... | 各腕の報酬確率（2 本以上、スペース区切り） |
 
 ---
 
