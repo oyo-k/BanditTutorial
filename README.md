@@ -73,10 +73,9 @@ flowchart LR
 
     subgraph Viz["可視化 (notebook)"]
         V1["CSV 読み込み・結合"]
-        V2["moving_average で平滑化"]
-        V3["α × β ごとに学習曲線を描画"]
+        V2["α × β ごとに学習曲線を描画"]
         V4["plots/ へ PNG 保存"]
-        V1 --> V2 --> V3 --> V4
+        V1 --> V2 --> V3
     end
 
     Params --> Sim
@@ -95,7 +94,7 @@ BanditTutorial/
 ├── scripts/
 │   └── run.jl                   # 1 条件をシミュレーションして CSV 保存
 ├── src/
-│   ├── bandit.jl                # モデル: softmax_choice / run_bandit / moving_average
+│   ├── bandit.jl                # モデル: softmax_choice / run_bandit
 │   └── io.jl                    # 保存: save_sim（CSV 書き出し）
 ├── test/
 │   └── runtests.jl              # ユニットテスト
