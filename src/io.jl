@@ -19,7 +19,7 @@ using CSV, DataFrames
 シミュレーション結果を `data/sims/` へ CSV 保存し、保存先パスを返す。
 
 ファイル名は DrWatson の `savename` で自動生成される。
-例: `bandit_alpha=0.3_beta=5.0_n_arms=2_n_reps=200_n_trials=100_seed=42.csv`
+例: `bandit_alpha-0.3_beta-5.0_n_arms-2_n_reps-200_n_trials-100_seed-42.csv`
 """
 function save_sim(p_optimal, mean_regret, reward_probs, alpha, beta, seed, n_trials, n_reps)
     n_arms = length(reward_probs)
@@ -45,10 +45,13 @@ function save_sim(p_optimal, mean_regret, reward_probs, alpha, beta, seed, n_tri
 
     # @strdict でパラメータの Dict を作り、savename でファイル名を生成する
     # n_arms をファイル名に含めることで腕の数が違う条件を区別できる
+    # equals="-" でキーと値の区切りをデフォルトの "=" から "-" に変更。
+    # "=" を含むパスは VS Code のターミナル・ノートブック出力で
+    # リンクとして認識されないことがあるため（クリックで開けなくなる）。
     params = @strdict alpha beta n_arms seed n_trials n_reps
     outdir = datadir("sims")
     mkpath(outdir)  # data/sims/ がなければ作成
-    fpath  = joinpath(outdir, savename("bandit", params, "csv"))
+    fpath  = joinpath(outdir, savename("bandit", params, "csv"; equals="-"))
 
     CSV.write(fpath, df)
     println("Saved: ", fpath)
